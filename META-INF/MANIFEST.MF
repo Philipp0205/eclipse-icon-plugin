@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Per-Instance Eclipse Icon Plugin
+Bundle-SymbolicName: com.github.eclipse.instanceicon;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.github.eclipse.instanceicon.Activator
+Bundle-Vendor: GitHub Eclipse Themes
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.swt,
+ org.eclipse.jface
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-ActivationPolicy: lazy
+Automatic-Module-Name: com.github.eclipse.instanceicon
+Export-Package: com.github.eclipse.instanceicon

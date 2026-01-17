@@ -1,0 +1,19 @@
+# Build outputs
+/bin/
+/target/
+
+# Eclipse settings (optional - can be versioned)
+# .settings/
+
+# Maven
+*.jar
+*.war
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+*.bak
+*.swp
+*~
