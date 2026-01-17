@@ -1,10 +1,5 @@
 package com.github.eclipse.instanceicon;
 
-import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
-import org.eclipse.swt.graphics.ImageLoader;
-import org.eclipse.swt.widgets.Display;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,30 +9,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.ImageLoader;
+import org.eclipse.swt.widgets.Display;
+
 /**
- * Manages loading, scaling, and caching of icons for the per-instance icon plugin.
+ * Manages loading, scaling, and caching of icons.
  * Supports PNG files at multiple sizes (16, 24, 32, 48, 64, 128).
  * Provides fallback to embedded default icons when custom icons are unavailable.
  */
 public class IconManager {
 
-    /** Standard icon sizes to provide for best quality at various DPIs */
     private static final int[] ICON_SIZES = { 16, 24, 32, 48, 64, 128 };
 
-    /** Cached images by size */
     private final Map<Integer, Image> imageCache = new HashMap<>();
     
-    /** The display for creating images */
     private final Display display;
     
-    /** Flag indicating if we're using the fallback icon */
     private boolean usingFallback = false;
 
-    /**
-     * Creates a new IconManager for the given display.
-     * 
-     * @param display the SWT display
-     */
     public IconManager(Display display) {
         this.display = display;
     }
@@ -92,9 +83,9 @@ public class IconManager {
             return loadFallbackIcons();
         }
 
-        String resourcePath = "/icons/default/eclipse_icons/" + iconName + ".png";
+        String resourcePath = "icons/default/eclipse_icons/" + iconName + ".png";
         try {
-            URL url = getClass().getResource(resourcePath);
+            URL url = Activator.getDefault().getBundle().getResource(resourcePath);
             if (url != null) {
                 try (InputStream is = url.openStream()) {
                     return loadIconsFromStream(is, iconName);
@@ -190,9 +181,9 @@ public class IconManager {
 
         // Try to load embedded fallback icons
         for (int size : ICON_SIZES) {
-            String resourcePath = "/icons/default/eclipse-instance-" + size + ".png";
+            String resourcePath = "icons/default/eclipse-instance-" + size + ".png";
             try {
-                URL url = getClass().getResource(resourcePath);
+                URL url = Activator.getDefault().getBundle().getResource(resourcePath);
                 if (url != null) {
                     try (InputStream is = url.openStream()) {
                         ImageLoader loader = new ImageLoader();
@@ -210,11 +201,6 @@ public class IconManager {
             }
         }
 
-        // If no embedded icons found, generate simple fallback icons
-        if (images.isEmpty()) {
-            images = generateSimpleFallbackIcons();
-        }
-
         Activator.logInfo("Using fallback icons (count: " + images.size() + ")");
         return images.toArray(new Image[0]);
     }
@@ -225,17 +211,17 @@ public class IconManager {
      * 
      * @return list of generated images
      */
-    private List<Image> generateSimpleFallbackIcons() {
-        List<Image> images = new ArrayList<>();
-        
-        for (int size : ICON_SIZES) {
-            Image image = createSimpleIcon(size);
-            imageCache.put(size, image);
-            images.add(image);
-        }
-        
-        return images;
-    }
+//    private List<Image> generateSimpleFallbackIcons() {
+//        List<Image> images = new ArrayList<>();
+//        
+//        for (int size : ICON_SIZES) {
+//            Image image = createSimpleIcon(size);
+//            imageCache.put(size, image);
+//            images.add(image);
+//        }
+//        
+//        return images;
+//    }
 
     /**
      * Creates a simple icon of the given size.
@@ -244,48 +230,48 @@ public class IconManager {
      * @param size the icon size
      * @return the generated image
      */
-    private Image createSimpleIcon(int size) {
-        ImageData imageData = new ImageData(size, size, 24, 
-                new org.eclipse.swt.graphics.PaletteData(0xFF0000, 0x00FF00, 0x0000FF));
-        imageData.alphaData = new byte[size * size];
-
-        // Fill with Eclipse purple color
-        int eclipsePurple = (0x41 << 16) | (0x20 << 8) | 0x5F; // #41205F
-        int badgeOrange = (0xFF << 16) | (0x80 << 8) | 0x00;   // #FF8000
-
-        int centerX = size / 2;
-        int centerY = size / 2;
-        int radius = size / 2 - 1;
-        int badgeRadius = Math.max(size / 5, 3);
-
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
-                int dx = x - centerX;
-                int dy = y - centerY;
-                double dist = Math.sqrt(dx * dx + dy * dy);
-
-                // Check if in badge area (bottom-right corner)
-                int badgeCenterX = size - badgeRadius - 1;
-                int badgeCenterY = size - badgeRadius - 1;
-                int bdx = x - badgeCenterX;
-                int bdy = y - badgeCenterY;
-                double badgeDist = Math.sqrt(bdx * bdx + bdy * bdy);
-
-                int index = y * size + x;
-                if (badgeDist <= badgeRadius) {
-                    imageData.setPixel(x, y, badgeOrange);
-                    imageData.alphaData[index] = (byte) 255;
-                } else if (dist <= radius) {
-                    imageData.setPixel(x, y, eclipsePurple);
-                    imageData.alphaData[index] = (byte) 255;
-                } else {
-                    imageData.alphaData[index] = (byte) 0;
-                }
-            }
-        }
-
-        return new Image(display, imageData);
-    }
+//    private Image createSimpleIcon(int size) {
+//        ImageData imageData = new ImageData(size, size, 24, 
+//                new org.eclipse.swt.graphics.PaletteData(0xFF0000, 0x00FF00, 0x0000FF));
+//        imageData.alphaData = new byte[size * size];
+//
+//        // Fill with Eclipse purple color
+//        int eclipsePurple = (0x41 << 16) | (0x20 << 8) | 0x5F; // #41205F
+//        int badgeOrange = (0xFF << 16) | (0x80 << 8) | 0x00;   // #FF8000
+//
+//        int centerX = size / 2;
+//        int centerY = size / 2;
+//        int radius = size / 2 - 1;
+//        int badgeRadius = Math.max(size / 5, 3);
+//
+//        for (int y = 0; y < size; y++) {
+//            for (int x = 0; x < size; x++) {
+//                int dx = x - centerX;
+//                int dy = y - centerY;
+//                double dist = Math.sqrt(dx * dx + dy * dy);
+//
+//                // Check if in badge area (bottom-right corner)
+//                int badgeCenterX = size - badgeRadius - 1;
+//                int badgeCenterY = size - badgeRadius - 1;
+//                int bdx = x - badgeCenterX;
+//                int bdy = y - badgeCenterY;
+//                double badgeDist = Math.sqrt(bdx * bdx + bdy * bdy);
+//
+//                int index = y * size + x;
+//                if (badgeDist <= badgeRadius) {
+//                    imageData.setPixel(x, y, badgeOrange);
+//                    imageData.alphaData[index] = (byte) 255;
+//                } else if (dist <= radius) {
+//                    imageData.setPixel(x, y, eclipsePurple);
+//                    imageData.alphaData[index] = (byte) 255;
+//                } else {
+//                    imageData.alphaData[index] = (byte) 0;
+//                }
+//            }
+//        }
+//
+//        return new Image(display, imageData);
+//    }
 
     /**
      * Scales image data to the specified dimensions using high-quality scaling.

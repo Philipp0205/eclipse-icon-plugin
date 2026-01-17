@@ -1,6 +1,8 @@
 package com.github.eclipse.instanceicon;
 
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
@@ -17,7 +19,7 @@ import org.osgi.framework.BundleContext;
 public class Activator extends AbstractUIPlugin {
 
     /** The plug-in ID */
-    public static final String PLUGIN_ID = "com.github.eclipse.instanceicon";
+    public static final String PLUGIN_ID = "de.kurrle.eclipse.instanceicon";
 
     /** System property for icon path */
     public static final String SYSPROP_ICON = "eclipse.instance.icon";
@@ -49,17 +51,35 @@ public class Activator extends AbstractUIPlugin {
     /** Scoped preference store */
     private ScopedPreferenceStore preferenceStore;
 
-    /**
-     * The constructor
-     */
-    public Activator() {
-    }
-
     @Override
     public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
+        initializeDefaultPreferences();
         logInfo("Per-instance icon plugin started");
+    }
+    
+    /**
+     * Initialize default preferences on first installation.
+     */
+    private void initializeDefaultPreferences() {
+        IPreferenceStore store = getPreferenceStore();
+        
+        // Check if this is the first run (no predefined icon preference has been explicitly set)
+        String currentPredefined = store.getString(PREF_PREDEFINED_ICON);
+
+        // Sets a default icon (eclipse_original) so the plugin looks good out of the box.
+        if (currentPredefined.isEmpty() && !store.contains(PREF_PREDEFINED_ICON)) {
+            store.setDefault(PREF_PREDEFINED_ICON, "eclipse_original");
+            store.setValue(PREF_PREDEFINED_ICON, "eclipse_original");
+            
+            // TODO Refactor to own method 
+            try {
+                ((ScopedPreferenceStore) store).save();
+            } catch (java.io.IOException e) {
+                logError("Failed to save default preferences", e);
+            }
+        }
     }
 
     @Override
@@ -69,11 +89,7 @@ public class Activator extends AbstractUIPlugin {
         super.stop(context);
     }
 
-    /**
-     * Returns the shared instance
-     *
-     * @return the shared instance
-     */
+    // Return shared instance
     public static Activator getDefault() {
         return plugin;
     }
@@ -81,16 +97,30 @@ public class Activator extends AbstractUIPlugin {
     @Override
     public IPreferenceStore getPreferenceStore() {
         if (preferenceStore == null) {
+            // InstanceScope stores preferences in the workspace's .metadata folder
             preferenceStore = new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID);
         }
         return preferenceStore;
     }
+    
+    public static IPath getWorkspacePath() {
+        try {
+            return ResourcesPlugin.getWorkspace().getRoot().getLocation();
+        } catch (Exception e) {
+            logWarning("Could not get workspace path", e);
+            return null;
+        }
+    }
 
-    /**
-     * Returns the plugin log.
-     * 
-     * @return the plugin log
-     */
+    public static String getWorkspaceId() {
+        IPath workspacePath = getWorkspacePath();
+        if (workspacePath != null) {
+            // Use hashCode to create a short unique ID from the workspace path
+            return "ws" + Integer.toHexString(workspacePath.toOSString().hashCode());
+        }
+        return "default";
+    }
+
     public static ILog getPluginLog() {
         Activator activator = getDefault();
         if (activator != null) {
@@ -99,49 +129,22 @@ public class Activator extends AbstractUIPlugin {
         return Platform.getLog(Activator.class);
     }
 
-    /**
-     * Logs an info message.
-     * 
-     * @param message the message
-     */
     public static void logInfo(String message) {
         getPluginLog().log(new Status(IStatus.INFO, PLUGIN_ID, message));
     }
 
-    /**
-     * Logs a warning message.
-     * 
-     * @param message the message
-     */
     public static void logWarning(String message) {
         getPluginLog().log(new Status(IStatus.WARNING, PLUGIN_ID, message));
     }
 
-    /**
-     * Logs a warning message with exception.
-     * 
-     * @param message the message
-     * @param e the exception
-     */
     public static void logWarning(String message, Throwable e) {
         getPluginLog().log(new Status(IStatus.WARNING, PLUGIN_ID, message, e));
     }
 
-    /**
-     * Logs an error message.
-     * 
-     * @param message the message
-     */
     public static void logError(String message) {
         getPluginLog().log(new Status(IStatus.ERROR, PLUGIN_ID, message));
     }
 
-    /**
-     * Logs an error message with exception.
-     * 
-     * @param message the message
-     * @param e the exception
-     */
     public static void logError(String message, Throwable e) {
         getPluginLog().log(new Status(IStatus.ERROR, PLUGIN_ID, message, e));
     }

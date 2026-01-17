@@ -1,12 +1,13 @@
 
-# Per-Instance Eclipse Icon Plugin
+# Per-Workspace Eclipse Icon Plugin
 
-A lightweight Eclipse plugin that allows you to distinguish multiple running Eclipse instances by setting unique taskbar/window icons and title suffixes.
+A lightweight Eclipse plugin that allows you to distinguish multiple Eclipse workspaces by setting unique taskbar/window icons and title suffixes. Each workspace can have its own icon configuration.
 
 ## Features
 
-- **Custom Icons**: Set per-instance icons visible in taskbar, alt-tab switcher, and window decorations
+- **Workspace-Based Icons**: Set unique icons for each workspace, visible in taskbar, alt-tab switcher, and window decorations
 - **Title Suffix**: Append a custom suffix to window titles (e.g., `[DEV]`, `[PROD]`)
+- **Per-Workspace Settings**: Icon preferences are stored per workspace, so different workspaces automatically show different icons
 - **Multiple Configuration Sources**: System properties, environment variables, and preferences
 - **Cross-Platform**: Works on Linux (KDE Plasma, GNOME, etc.) with both X11 and Wayland
 - **PDE Support**: Works in both host IDE and PDE-launched target Eclipse instances
@@ -66,6 +67,8 @@ export ECLIPSE_INSTANCE_TITLE_SUFFIX=[DEV]
 2. Choose from predefined icons or set a custom icon file path
 3. Optionally set a title suffix
 4. Click Apply and OK
+
+**Note**: Settings are stored per workspace. When you open a different workspace, that workspace will have its own independent icon settings. This allows you to easily distinguish between workspaces (e.g., DEV, PROD, TEST) without needing launcher scripts or environment variables.
 
 #### Predefined Icons
 

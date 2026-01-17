@@ -12,24 +12,22 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 /**
- * Early startup class for the per-instance icon plugin.
- * Applies custom icons and title suffixes to Eclipse windows to distinguish
- * multiple running instances in taskbars and window switchers.
+ * Early startup class for the per-instance icon plugin. Applies custom icons to
+ * Eclipse windows to distinguish multiple running instances in taskbars and
+ * window switchers.
  * 
- * Configuration precedence:
- * 1. System property (-Declipse.instance.icon, -Declipse.instance.titleSuffix)
- * 2. Environment variable (ECLIPSE_INSTANCE_ICON, ECLIPSE_INSTANCE_TITLE_SUFFIX)
+ * Configuration precedence: 
+ * 1. System property (-Declipse.instance.icon,  -Declipse.instance.titleSuffix) 
+ * 2. Environment variable (ECLIPSE_INSTANCE_ICON, ECLIPSE_INSTANCE_TITLE_SUFFIX) 
  * 3. Plugin preferences
  * 4. Fallback (embedded default icon)
  */
 public class Startup implements IStartup {
 
     private IconManager iconManager;
-    private TitleManager titleManager;
     private IWindowListener windowListener;
     private IWorkbenchListener workbenchListener;
     private Image[] currentIcons;
-    private String currentTitleSuffix;
 
     @Override
     public void earlyStartup() {
@@ -49,22 +47,17 @@ public class Startup implements IStartup {
      * Initializes the plugin: loads icons, applies to windows, registers listeners.
      */
     private void initialize() {
-        Activator.logInfo("Initializing per-instance icon plugin");
-
-        IWorkbench workbench = PlatformUI.getWorkbench();
-        Display display = workbench.getDisplay();
-
-        // Initialize managers
+        // Initialize IconManager with current display
+        Display display = PlatformUI.getWorkbench().getDisplay();
         iconManager = new IconManager(display);
-        titleManager = new TitleManager();
-
+        
         // Read configuration and load icons
-        currentTitleSuffix = getTitleSuffix();
         currentIcons = loadConfiguredIcons();
-
-        // Apply to all existing windows
+        
+        // Apply icons to existing windows
+        IWorkbench workbench = PlatformUI.getWorkbench();
         applyToAllWindows(workbench);
-
+        
         // Register window listener for new windows
         windowListener = new IWindowListener() {
             @Override
@@ -74,24 +67,18 @@ public class Startup implements IStartup {
 
             @Override
             public void windowClosed(IWorkbenchWindow window) {
-                Shell shell = window.getShell();
-                if (shell != null) {
-                    titleManager.untrack(shell);
-                }
             }
 
             @Override
             public void windowActivated(IWorkbenchWindow window) {
-                // No action needed
             }
 
             @Override
             public void windowDeactivated(IWorkbenchWindow window) {
-                // No action needed
             }
         };
         workbench.addWindowListener(windowListener);
-
+        
         // Register workbench listener for shutdown
         workbenchListener = new IWorkbenchListener() {
             @Override
@@ -116,10 +103,10 @@ public class Startup implements IStartup {
      */
     private Image[] loadConfiguredIcons() {
         // 1. Check system property / environment variable (custom path)
-        String iconPath = getIconPath();
-        if (iconPath != null) {
-            return iconManager.loadIcons(iconPath);
-        }
+//        String iconPath = getIconPath();
+//        if (iconPath != null) {
+//            return iconManager.loadIcons(iconPath);
+//        }
 
         // 2. Check predefined icon preference
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
@@ -129,73 +116,8 @@ public class Startup implements IStartup {
             return iconManager.loadPredefinedIcon(predefined);
         }
 
-        // 3. Check custom icon path preference
-        String customPath = store.getString(Activator.PREF_ICON_PATH);
-        if (customPath != null && !customPath.trim().isEmpty()) {
-            Activator.logInfo("Using custom icon path from preferences: " + customPath);
-            return iconManager.loadIcons(customPath);
-        }
-
-        // 4. Fallback
-        Activator.logInfo("No icon configured, using fallback icon");
+        // 3. Fallback to default icons
         return iconManager.loadIcons(null);
-    }
-
-    /**
-     * Gets the icon path from configuration sources (precedence: sysprop > env).
-     * Note: Preference is checked separately in loadConfiguredIcons to allow predefined icons.
-     * 
-     * @return the icon path, or null if not configured via sysprop/env
-     */
-    private String getIconPath() {
-        // 1. System property
-        String path = System.getProperty(Activator.SYSPROP_ICON);
-        if (path != null && !path.trim().isEmpty()) {
-            Activator.logInfo("Using icon path from system property: " + path);
-            return path.trim();
-        }
-
-        // 2. Environment variable
-        path = System.getenv(Activator.ENV_ICON);
-        if (path != null && !path.trim().isEmpty()) {
-            Activator.logInfo("Using icon path from environment variable: " + path);
-            return path.trim();
-        }
-
-        // Not configured via sysprop/env
-        return null;
-    }
-
-    /**
-     * Gets the title suffix from configuration sources (precedence: sysprop > env > pref).
-     * 
-     * @return the title suffix, or null if not configured
-     */
-    private String getTitleSuffix() {
-        // 1. System property
-        String suffix = System.getProperty(Activator.SYSPROP_TITLE_SUFFIX);
-        if (suffix != null && !suffix.trim().isEmpty()) {
-            Activator.logInfo("Using title suffix from system property: " + suffix);
-            return suffix.trim();
-        }
-
-        // 2. Environment variable
-        suffix = System.getenv(Activator.ENV_TITLE_SUFFIX);
-        if (suffix != null && !suffix.trim().isEmpty()) {
-            Activator.logInfo("Using title suffix from environment variable: " + suffix);
-            return suffix.trim();
-        }
-
-        // 3. Plugin preference
-        IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-        suffix = store.getString(Activator.PREF_TITLE_SUFFIX);
-        if (suffix != null && !suffix.trim().isEmpty()) {
-            Activator.logInfo("Using title suffix from preferences: " + suffix);
-            return suffix.trim();
-        }
-
-        // 4. No configuration
-        return null;
     }
 
     /**
@@ -232,11 +154,6 @@ public class Startup implements IStartup {
             shell.setImages(currentIcons);
             Activator.logInfo("Applied icons to window: " + shell.getText());
         }
-
-        // Apply title suffix
-        if (currentTitleSuffix != null && !currentTitleSuffix.isEmpty()) {
-            titleManager.applySuffix(shell, currentTitleSuffix);
-        }
     }
 
     /**
@@ -248,13 +165,6 @@ public class Startup implements IStartup {
 
         // Reload icons
         currentIcons = loadConfiguredIcons();
-
-        // Reload title suffix
-        String newSuffix = getTitleSuffix();
-        if (newSuffix != null && !newSuffix.equals(currentTitleSuffix)) {
-            titleManager.updateSuffix(newSuffix);
-            currentTitleSuffix = newSuffix;
-        }
 
         // Reapply to all windows
         IWorkbench workbench = PlatformUI.getWorkbench();
@@ -283,11 +193,6 @@ public class Startup implements IStartup {
         // Dispose images
         if (iconManager != null) {
             iconManager.disposeAll();
-        }
-
-        // Clear title manager
-        if (titleManager != null) {
-            titleManager.clear();
         }
 
         Activator.logInfo("Per-instance icon plugin cleanup complete");
