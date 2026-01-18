@@ -2,6 +2,7 @@ package com.github.eclipse.instanceicon;
 
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IStartup;
@@ -97,27 +98,48 @@ public class Startup implements IStartup {
     }
 
     /**
-     * Loads icons based on configuration (precedence: sysprop/env > predefined pref > custom path pref > fallback).
+     * Loads icons based on color preferences from the SVG template.
      * 
      * @return array of images
      */
     private Image[] loadConfiguredIcons() {
-        // 1. Check system property / environment variable (custom path)
-//        String iconPath = getIconPath();
-//        if (iconPath != null) {
-//            return iconManager.loadIcons(iconPath);
-//        }
-
-        // 2. Check predefined icon preference
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
-        String predefined = store.getString(Activator.PREF_PREDEFINED_ICON);
-        if (predefined != null && !predefined.trim().isEmpty()) {
-            Activator.logInfo("Using predefined icon from preferences: " + predefined);
-            return iconManager.loadPredefinedIcon(predefined);
+        
+        // Load color preferences
+        String primaryStr = store.getString(Activator.PREF_COLOR_PRIMARY);
+        String secondaryStr = store.getString(Activator.PREF_COLOR_SECONDARY);
+        String accentStr = store.getString(Activator.PREF_COLOR_ACCENT);
+        String overlayText = store.getString(Activator.PREF_ICON_TEXT);
+        String overlayTextColorStr = store.getString(Activator.PREF_ICON_TEXT_COLOR);
+        int textSize = store.getInt(Activator.PREF_ICON_TEXT_SIZE);
+        if (textSize == 0) {
+            textSize = Activator.DEFAULT_ICON_TEXT_SIZE;
         }
-
-        // 3. Fallback to default icons
-        return iconManager.loadIcons(null);
+        
+        // Parse colors with fallback to defaults
+        RGB primaryColor = primaryStr.isEmpty() 
+            ? IconManager.parseRgbString(Activator.DEFAULT_COLOR_PRIMARY)
+            : IconManager.parseRgbString(primaryStr);
+        RGB secondaryColor = secondaryStr.isEmpty()
+            ? IconManager.parseRgbString(Activator.DEFAULT_COLOR_SECONDARY)
+            : IconManager.parseRgbString(secondaryStr);
+        RGB accentColor = accentStr.isEmpty()
+            ? IconManager.parseRgbString(Activator.DEFAULT_COLOR_ACCENT)
+            : IconManager.parseRgbString(accentStr);
+        RGB textColor = overlayTextColorStr.isEmpty()
+            ? IconManager.parseRgbString(Activator.DEFAULT_ICON_TEXT_COLOR)
+            : IconManager.parseRgbString(overlayTextColorStr);
+        
+        String normalizedOverlay = normalizeOverlayText(overlayText);
+        
+        Activator.logInfo("Loading SVG icons with colors - Primary: " + IconManager.rgbToHex(primaryColor) 
+            + ", Secondary: " + IconManager.rgbToHex(secondaryColor) 
+            + ", Accent: " + IconManager.rgbToHex(accentColor) 
+            + (normalizedOverlay.isEmpty() ? "" : ", Text: '" + normalizedOverlay + "'")
+            + ", TextColor: " + IconManager.rgbToHex(textColor)
+            + ", TextSize: " + textSize + "%");
+        
+        return iconManager.loadSvgIcons(primaryColor, secondaryColor, accentColor, normalizedOverlay, textColor, textSize);
     }
 
     /**
@@ -196,5 +218,20 @@ public class Startup implements IStartup {
         }
 
         Activator.logInfo("Per-instance icon plugin cleanup complete");
+    }
+    
+    private String normalizeOverlayText(String text) {
+        if (text == null) {
+            return "";
+        }
+        String trimmed = text.trim();
+        if (trimmed.isEmpty()) {
+            return "";
+        }
+        String upper = trimmed.toUpperCase();
+        if (upper.length() > Activator.MAX_ICON_TEXT_LENGTH) {
+            return upper.substring(0, Activator.MAX_ICON_TEXT_LENGTH);
+        }
+        return upper;
     }
 }

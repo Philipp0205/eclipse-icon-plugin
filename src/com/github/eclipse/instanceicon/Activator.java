@@ -42,6 +42,45 @@ public class Activator extends AbstractUIPlugin {
     /** Preference key for title suffix */
     public static final String PREF_TITLE_SUFFIX = "instanceTitleSuffix";
     
+    /** Preference key for primary color (default #473788) */
+    public static final String PREF_COLOR_PRIMARY = "instanceColorPrimary";
+    
+    /** Preference key for secondary color (default #2C2255) */
+    public static final String PREF_COLOR_SECONDARY = "instanceColorSecondary";
+    
+    /** Preference key for accent color (default #F7941E) */
+    public static final String PREF_COLOR_ACCENT = "instanceColorAccent";
+    
+    /** Preference key for icon overlay text */
+    public static final String PREF_ICON_TEXT = "instanceIconText";
+    
+    /** Preference key for icon overlay text color */
+    public static final String PREF_ICON_TEXT_COLOR = "instanceIconTextColor";
+    
+    /** Preference key for icon overlay text size (percentage of icon width) */
+    public static final String PREF_ICON_TEXT_SIZE = "instanceIconTextSize";
+    
+    /** Default primary color */
+    public static final String DEFAULT_COLOR_PRIMARY = "71,55,136"; // #473788 as R,G,B
+    
+    /** Default secondary color */
+    public static final String DEFAULT_COLOR_SECONDARY = "44,34,85"; // #2C2255 as R,G,B
+    
+    /** Default accent color */
+    public static final String DEFAULT_COLOR_ACCENT = "247,148,30"; // #F7941E as R,G,B
+    
+    /** Default icon overlay text */
+    public static final String DEFAULT_ICON_TEXT = "";
+    
+    /** Default icon overlay text color */
+    public static final String DEFAULT_ICON_TEXT_COLOR = "0,0,0"; // black
+    
+    /** Default icon overlay text size (percentage of icon width) */
+    public static final int DEFAULT_ICON_TEXT_SIZE = 33; // 33% of icon width
+    
+    /** Max characters for icon overlay text */
+    public static final int MAX_ICON_TEXT_LENGTH = 4;
+    
     /** Preference key to enable/disable plugin */
     public static final String PREF_ENABLED = "instanceIconEnabled";
 
@@ -65,20 +104,35 @@ public class Activator extends AbstractUIPlugin {
     private void initializeDefaultPreferences() {
         IPreferenceStore store = getPreferenceStore();
         
-        // Check if this is the first run (no predefined icon preference has been explicitly set)
-        String currentPredefined = store.getString(PREF_PREDEFINED_ICON);
-
-        // Sets a default icon (eclipse_original) so the plugin looks good out of the box.
-        if (currentPredefined.isEmpty() && !store.contains(PREF_PREDEFINED_ICON)) {
-            store.setDefault(PREF_PREDEFINED_ICON, "eclipse_original");
-            store.setValue(PREF_PREDEFINED_ICON, "eclipse_original");
-            
-            // TODO Refactor to own method 
-            try {
-                ((ScopedPreferenceStore) store).save();
-            } catch (java.io.IOException e) {
-                logError("Failed to save default preferences", e);
-            }
+        // Set default colors
+        store.setDefault(PREF_COLOR_PRIMARY, DEFAULT_COLOR_PRIMARY);
+        store.setDefault(PREF_COLOR_SECONDARY, DEFAULT_COLOR_SECONDARY);
+        store.setDefault(PREF_COLOR_ACCENT, DEFAULT_COLOR_ACCENT);
+        store.setDefault(PREF_ICON_TEXT, DEFAULT_ICON_TEXT);
+        store.setDefault(PREF_ICON_TEXT_COLOR, DEFAULT_ICON_TEXT_COLOR);
+        
+        // Initialize colors if not set
+        if (store.getString(PREF_COLOR_PRIMARY).isEmpty()) {
+            store.setValue(PREF_COLOR_PRIMARY, DEFAULT_COLOR_PRIMARY);
+        }
+        if (store.getString(PREF_COLOR_SECONDARY).isEmpty()) {
+            store.setValue(PREF_COLOR_SECONDARY, DEFAULT_COLOR_SECONDARY);
+        }
+        if (store.getString(PREF_COLOR_ACCENT).isEmpty()) {
+            store.setValue(PREF_COLOR_ACCENT, DEFAULT_COLOR_ACCENT);
+        }
+        if (store.getString(PREF_ICON_TEXT).isEmpty()) {
+            store.setValue(PREF_ICON_TEXT, DEFAULT_ICON_TEXT);
+        }
+        if (store.getString(PREF_ICON_TEXT_COLOR).isEmpty()) {
+            store.setValue(PREF_ICON_TEXT_COLOR, DEFAULT_ICON_TEXT_COLOR);
+        }
+        
+        // Save preferences
+        try {
+            ((ScopedPreferenceStore) store).save();
+        } catch (java.io.IOException e) {
+            logError("Failed to save default preferences", e);
         }
     }
 
