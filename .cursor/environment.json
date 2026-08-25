@@ -1,0 +1,5 @@
+{
+  "name": "Per-Workspace Eclipse Icon Plugin",
+  "user": "ubuntu",
+  "install": "bash scripts/install.sh"
+}
