@@ -9,7 +9,7 @@
 *.jar
 *.war
 
-# Branch update-site builds are intentionally installable from raw GitHub.
+# p2/ is the published update site served by GitHub Pages.
 !p2/**/*.jar
 
 # OS files

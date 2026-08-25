@@ -18,12 +18,16 @@ In Eclipse, open **Help → Install New Software…**, add this update site, and
 select **Per-Workspace Eclipse Icon**:
 
 ```text
-https://philipp0205.github.io/eclipse-icon-plugin/
+https://philipp0205.github.io/eclipse-icon-plugin/p2/
 ```
 
-The site is published from `main` by GitHub Actions. For a pull-request test
-build, download the `p2-update-site` workflow artifact or use the temporary raw
-GitHub URL supplied in that pull request.
+The `/p2/` suffix is required. The project's GitHub Pages root serves a landing
+page, not p2 metadata, so Eclipse cannot resolve it as a repository.
+
+The site lives in the `p2/` directory of `main` and is refreshed by the release
+workflow. To test an unreleased change, download the `p2-update-site` artifact
+from that revision's workflow run and add the extracted folder as a local
+repository.
 
 Restart Eclipse after the initial installation. Configure the workspace under
 **Window → Preferences → General → Workspace Icon**. Changes made with Apply or
@@ -66,7 +70,11 @@ The Maven/Tycho reactor builds the plug-in, installable feature, and p2 site:
 ./mvnw clean verify
 ```
 
-The update site is produced at `repository/target/repository/`.
+The update site is produced at `repository/target/repository/`. Add that folder
+in Eclipse as a local repository to test it before publishing.
+
+Releases are published by pushing a `v*` tag, which copies the freshly built
+repository into `p2/` on `main`. GitHub Pages then serves it.
 
 ## License
 

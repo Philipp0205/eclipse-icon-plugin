@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+env:
+  TYCHO_VERSION: "5.0.3"
+  FEATURE_IU: com.github.eclipse.instanceicon.feature.feature.group
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,10 +29,10 @@ jobs:
       - name: Resolve feature installation
         run: >-
           ./mvnw --batch-mode --non-recursive
-          org.eclipse.tycho:tycho-p2-director-plugin:5.0.3:director
+          org.eclipse.tycho:tycho-p2-director-plugin:${TYCHO_VERSION}:director
           -Ddestination=${{ runner.temp }}/p2-verify
           -Drepositories=file:${{ github.workspace }}/repository/target/repository/,https://download.eclipse.org/releases/2026-06/
-          -DinstallIUs=com.github.eclipse.instanceicon.feature.feature.group
+          -DinstallIUs=${FEATURE_IU}
           -DverifyOnly=true
           -Dprofileproperties=org.eclipse.update.install.features=true
       - name: Upload p2 repository
@@ -37,25 +41,38 @@ jobs:
           name: p2-update-site
           path: repository/target/repository
 
-  deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+  # GitHub Pages serves this repository's default branch, so the published
+  # update site is the committed p2/ directory rather than a Pages artifact.
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      contents: write
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/checkout@v5
         with:
-          name: p2-update-site
-          path: site
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+          ref: main
+      - uses: actions/setup-java@v5
         with:
-          path: site
-      - name: Deploy p2 repository
-        id: deployment
-        uses: actions/deploy-pages@v4
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Build the update site
+        run: ./mvnw --batch-mode clean verify
+      - name: Refresh the published update site
+        run: |
+          rm -rf p2
+          mkdir p2
+          cp -a repository/target/repository/. p2/
+      - name: Commit the published update site
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A p2
+          if git diff --cached --quiet; then
+            echo "Update site is already up to date."
+          else
+            git commit -m "Publish p2 update site from ${GITHUB_REF_NAME}"
+            git push origin HEAD:main
+          fi
