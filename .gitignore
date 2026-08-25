@@ -1,6 +1,6 @@
 # Build outputs
-/bin/
-/target/
+**/bin/
+**/target/
 
 # Eclipse settings (optional - can be versioned)
 # .settings/

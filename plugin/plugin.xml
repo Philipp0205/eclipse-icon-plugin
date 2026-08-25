@@ -2,6 +2,12 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension
+         point="org.eclipse.core.runtime.preferences">
+      <initializer
+            class="com.github.eclipse.instanceicon.preferences.PreferenceInitializer">
+      </initializer>
+   </extension>
+   <extension
          point="org.eclipse.ui.startup">
       <startup
             class="com.github.eclipse.instanceicon.Startup">
@@ -11,8 +17,9 @@
    <extension
          point="org.eclipse.ui.preferencePages">
       <page
+            category="org.eclipse.ui.preferencePages.General"
             id="com.github.eclipse.instanceicon.preferences.InstanceIconPreferencePage"
-            name="Instance Icon"
+            name="%preferencePage.name"
             class="com.github.eclipse.instanceicon.preferences.InstanceIconPreferencePage">
       </page>
    </extension>
