@@ -29,7 +29,9 @@ import org.eclipse.swt.widgets.Display;
  */
 public final class IconManager {
 
-    private static final int[] ICON_SIZES = { 16, 24, 32, 48, 64, 128 };
+    // Includes the source artwork's native 256px so desktop panels at high DPI
+    // never have to upscale, plus the 22px GTK/KDE panel size.
+    private static final int[] ICON_SIZES = { 16, 22, 24, 32, 48, 64, 128, 256 };
     private static final String ICON_ROOT = "icons/default/eclipse_icons/";
     private static final String BASE_ICON = ICON_ROOT + "eclipse_original.png";
 
@@ -102,7 +104,7 @@ public final class IconManager {
                 return null;
             }
             ImageData source = colorize(new ImageData(input), primary, secondary, accent);
-            Image image = new Image(display, source.scaledTo(size, size));
+            Image image = new Image(display, resample(source, size, size));
             applyOverlayText(image, text, textColor, textSizePercent);
             return image;
         } catch (RuntimeException | IOException e) {
@@ -140,7 +142,7 @@ public final class IconManager {
 
     private Image createPreviewFromData(int size, ImageData source, String text, RGB textColor,
             int textSizePercent) {
-        Image image = new Image(display, source.scaledTo(size, size));
+        Image image = new Image(display, resample(source, size, size));
         applyOverlayText(image, text, textColor, textSizePercent);
         return image;
     }
@@ -149,7 +151,7 @@ public final class IconManager {
             int textSizePercent) {
         List<Image> images = new ArrayList<>(ICON_SIZES.length);
         for (int size : ICON_SIZES) {
-            Image image = new Image(display, source.scaledTo(size, size));
+            Image image = new Image(display, resample(source, size, size));
             applyOverlayText(image, text, textColor, textSizePercent);
             imageCache.put(size, image);
             images.add(image);
@@ -157,7 +159,121 @@ public final class IconManager {
         return images.toArray(Image[]::new);
     }
 
-    private ImageData colorize(ImageData source, RGB primary, RGB secondary, RGB accent) {
+    /**
+     * Scales an icon while keeping edges smooth. {@link ImageData#scaledTo} samples
+     * a single nearest pixel, which visibly aliases the logo's curves at panel
+     * sizes, so this averages over the whole source footprint when shrinking and
+     * interpolates when growing. Colours are weighted by alpha so transparent
+     * pixels cannot bleed dark fringes into the edges.
+     */
+    private static ImageData resample(ImageData source, int width, int height) {
+        int sourceWidth = source.width;
+        int sourceHeight = source.height;
+        if (sourceWidth == width && sourceHeight == height) {
+            return source;
+        }
+
+        int[] red = new int[sourceWidth * sourceHeight];
+        int[] green = new int[red.length];
+        int[] blue = new int[red.length];
+        int[] alpha = new int[red.length];
+        PaletteData palette = source.palette;
+        for (int y = 0; y < sourceHeight; y++) {
+            for (int x = 0; x < sourceWidth; x++) {
+                int pixel = source.getPixel(x, y);
+                int index = y * sourceWidth + x;
+                int a = pixel == source.transparentPixel ? 0 : source.getAlpha(x, y);
+                RGB rgb = palette.getRGB(pixel);
+                alpha[index] = a;
+                red[index] = rgb.red * a;
+                green[index] = rgb.green * a;
+                blue[index] = rgb.blue * a;
+            }
+        }
+
+        ImageData result = new ImageData(width, height, 32,
+                new PaletteData(0xFF0000, 0x00FF00, 0x0000FF));
+        result.alphaData = new byte[width * height];
+        boolean shrinking = width <= sourceWidth && height <= sourceHeight;
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                long sumRed;
+                long sumGreen;
+                long sumBlue;
+                long sumAlpha;
+                long weight;
+
+                if (shrinking) {
+                    int fromX = x * sourceWidth / width;
+                    int toX = Math.max(fromX + 1, (x + 1) * sourceWidth / width);
+                    int fromY = y * sourceHeight / height;
+                    int toY = Math.max(fromY + 1, (y + 1) * sourceHeight / height);
+                    sumRed = 0;
+                    sumGreen = 0;
+                    sumBlue = 0;
+                    sumAlpha = 0;
+                    weight = (long) (toX - fromX) * (toY - fromY);
+                    for (int sy = fromY; sy < toY; sy++) {
+                        for (int sx = fromX; sx < toX; sx++) {
+                            int index = sy * sourceWidth + sx;
+                            sumRed += red[index];
+                            sumGreen += green[index];
+                            sumBlue += blue[index];
+                            sumAlpha += alpha[index];
+                        }
+                    }
+                } else {
+                    // Bilinear: sample the four neighbours around the fractional
+                    // source position, in 1/256 fixed point to stay in integers.
+                    long sampleX = width == 1 ? 0
+                            : (long) x * (sourceWidth - 1) * 256 / (width - 1);
+                    long sampleY = height == 1 ? 0
+                            : (long) y * (sourceHeight - 1) * 256 / (height - 1);
+                    int baseX = (int) (sampleX >> 8);
+                    int baseY = (int) (sampleY >> 8);
+                    int fracX = (int) (sampleX & 0xFF);
+                    int fracY = (int) (sampleY & 0xFF);
+                    int nextX = Math.min(baseX + 1, sourceWidth - 1);
+                    int nextY = Math.min(baseY + 1, sourceHeight - 1);
+
+                    int topLeft = baseY * sourceWidth + baseX;
+                    int topRight = baseY * sourceWidth + nextX;
+                    int bottomLeft = nextY * sourceWidth + baseX;
+                    int bottomRight = nextY * sourceWidth + nextX;
+
+                    long wTopLeft = (long) (256 - fracX) * (256 - fracY);
+                    long wTopRight = (long) fracX * (256 - fracY);
+                    long wBottomLeft = (long) (256 - fracX) * fracY;
+                    long wBottomRight = (long) fracX * fracY;
+
+                    sumRed = red[topLeft] * wTopLeft + red[topRight] * wTopRight
+                            + red[bottomLeft] * wBottomLeft + red[bottomRight] * wBottomRight;
+                    sumGreen = green[topLeft] * wTopLeft + green[topRight] * wTopRight
+                            + green[bottomLeft] * wBottomLeft + green[bottomRight] * wBottomRight;
+                    sumBlue = blue[topLeft] * wTopLeft + blue[topRight] * wTopRight
+                            + blue[bottomLeft] * wBottomLeft + blue[bottomRight] * wBottomRight;
+                    sumAlpha = alpha[topLeft] * wTopLeft + alpha[topRight] * wTopRight
+                            + alpha[bottomLeft] * wBottomLeft + alpha[bottomRight] * wBottomRight;
+                    weight = 256L * 256L;
+                }
+
+                int outAlpha = (int) (sumAlpha / weight);
+                // Undo the alpha weighting; sums are colour*alpha, so dividing by
+                // the alpha sum recovers the colour at full strength.
+                int outRed = sumAlpha == 0 ? 0 : (int) (sumRed / sumAlpha);
+                int outGreen = sumAlpha == 0 ? 0 : (int) (sumGreen / sumAlpha);
+                int outBlue = sumAlpha == 0 ? 0 : (int) (sumBlue / sumAlpha);
+
+                result.setPixel(x, y, result.palette.getPixel(
+                        new RGB(clamp(outRed), clamp(outGreen), clamp(outBlue))));
+                result.setAlpha(x, y, clamp(outAlpha));
+            }
+        }
+        return result;
+    }
+
+    private static ImageData colorize(ImageData source, RGB primary, RGB secondary, RGB accent) {
         ImageData result = new ImageData(source.width, source.height, 32,
                 new PaletteData(0xFF0000, 0x00FF00, 0x0000FF));
         result.alphaData = new byte[source.width * source.height];
@@ -175,7 +291,7 @@ public final class IconManager {
         return result;
     }
 
-    private RGB recolorPixel(RGB source, RGB primary, RGB secondary, RGB accent) {
+    private static RGB recolorPixel(RGB source, RGB primary, RGB secondary, RGB accent) {
         int max = Math.max(source.red, Math.max(source.green, source.blue));
         int min = Math.min(source.red, Math.min(source.green, source.blue));
         double saturation = max == 0 ? 0.0 : (max - min) / (double) max;
