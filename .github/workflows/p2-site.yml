@@ -58,19 +58,15 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Build the update site
-        run: ./mvnw --batch-mode clean verify
+      - name: Build the update site and merge it with the published one
+        run: ./mvnw --batch-mode clean verify -Ppublish-site
       - name: Refresh the published update site
-        # Artifacts are never deleted. p2 clients cache repository metadata, so a
-        # client that resolved an older version still requests that exact file;
-        # removing it breaks their install with "Can't download artifact".
+        # merged-site already contains every previously published version, so
+        # replacing p2/ wholesale does not drop anything a client may request.
         run: |
-          mkdir -p p2/plugins p2/features
-          cp -a repository/target/repository/plugins/. p2/plugins/
-          cp -a repository/target/repository/features/. p2/features/
-          for meta in artifacts.jar artifacts.xml.xz content.jar content.xml.xz p2.index; do
-            cp -a "repository/target/repository/$meta" "p2/$meta"
-          done
+          rm -rf p2
+          mkdir p2
+          cp -a repository/target/merged-site/. p2/
       - name: Commit the published update site
         run: |
           git config user.name 'github-actions[bot]'
