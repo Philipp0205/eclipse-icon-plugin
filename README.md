@@ -25,9 +25,14 @@ The `/p2/` suffix is required. The project's GitHub Pages root serves a landing
 page, not p2 metadata, so Eclipse cannot resolve it as a repository.
 
 The site lives in the `p2/` directory of `main` and is refreshed by the release
-workflow. To test an unreleased change, download the `p2-update-site` artifact
-from that revision's workflow run and add the extracted folder as a local
-repository.
+workflow. Previously published bundles are kept, because Eclipse caches
+repository metadata and keeps requesting the exact version it resolved earlier.
+If Eclipse reports that it cannot download an older version, select the site
+under **Preferences → Install/Update → Available Software Sites** and click
+**Reload**.
+
+To test an unreleased change, download the `p2-update-site` artifact from that
+revision's workflow run and add the extracted folder as a local repository.
 
 Restart Eclipse after the initial installation. Configure the workspace under
 **Window → Preferences → General → Workspace Icon**. Changes made with Apply or
