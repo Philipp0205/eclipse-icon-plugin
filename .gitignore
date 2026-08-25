@@ -9,6 +9,9 @@
 *.jar
 *.war
 
+# Branch update-site builds are intentionally installable from raw GitHub.
+!p2/**/*.jar
+
 # OS files
 .DS_Store
 Thumbs.db
