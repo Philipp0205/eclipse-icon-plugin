@@ -1,236 +1,81 @@
+# Per-Workspace Eclipse Icon
 
-# Per-Workspace Eclipse Icon Plugin
-
-A lightweight Eclipse plugin that allows you to distinguish multiple Eclipse workspaces by setting unique taskbar/window icons and title suffixes. Each workspace can have its own icon configuration.
-
-## Features
-
-- **Workspace-Based Icons**: Set unique icons for each workspace, visible in taskbar, alt-tab switcher, and window decorations
-- **Title Suffix**: Append a custom suffix to window titles (e.g., `[DEV]`, `[PROD]`)
-- **Per-Workspace Settings**: Icon preferences are stored per workspace, so different workspaces automatically show different icons
-- **Multiple Configuration Sources**: System properties, environment variables, and preferences
-- **Cross-Platform**: Works on Linux (KDE Plasma, GNOME, etc.) with both X11 and Wayland
-- **PDE Support**: Works in both host IDE and PDE-launched target Eclipse instances
-- **Early Startup**: Applies icons as soon as workbench windows open
+An Eclipse plug-in that gives each workspace a distinct window/taskbar icon,
+short icon label, and title suffix.
 
 ## Requirements
 
-- Eclipse 4.x+ (2024-xx or later recommended)
-- Java 17 or later
-- Linux with X11 or Wayland (tested on KDE Plasma 5/6, RHEL9)
+- Eclipse 2026-06 or newer
+- Java 21
 
-## Installation
+Window icons are applied through SWT. Desktop environments, especially Wayland
+compositors, may choose not to display per-window icons; the title suffix remains
+available in that case.
 
-### Option 1: Dropins (Simplest)
+## Install
 
-1. Build the plugin JAR (or download from releases)
-2. Copy the JAR to `ECLIPSE_HOME/dropins/`
-3. Restart Eclipse
+In Eclipse, open **Help → Install New Software…**, add this update site, and
+select **Per-Workspace Eclipse Icon**:
 
-### Option 2: Install New Software
+```text
+https://philipp0205.github.io/eclipse-icon-plugin/p2/
+```
 
-1. Add the update site URL in Eclipse: `Help > Install New Software...`
-2. Select the "Per-Instance Eclipse Icon" plugin
-3. Complete the installation and restart
+The `/p2/` suffix is required. The project's GitHub Pages root serves a landing
+page, not p2 metadata, so Eclipse cannot resolve it as a repository.
+
+The site lives in the `p2/` directory of `main` and is refreshed by the release
+workflow. To test an unreleased change, download the `p2-update-site` artifact
+from that revision's workflow run and add the extracted folder as a local
+repository.
+
+Restart Eclipse after the initial installation. Configure the workspace under
+**Window → Preferences → General → Workspace Icon**. Changes made with Apply or
+Apply and Close take effect immediately.
 
 ## Configuration
 
-Configuration sources are checked in the following precedence order:
+Preferences are stored in the workspace metadata, independently for every
+workspace. The page supports:
 
-1. **System properties** (highest priority)
-2. **Environment variables**
-3. **Plugin preferences**
-4. **Fallback** (embedded default icon)
+- generated icon colors;
+- bundled purple, blue, sky, green, sage, red, and rose icons;
+- an external PNG;
+- an icon label of up to four characters;
+- label color and size;
+- a window-title suffix such as `[DEV]`;
+- temporarily disabling and restoring the original window appearance.
 
-### System Properties
+Launcher configuration overrides workspace preferences:
 
-Add to `eclipse.ini` (after `-vmargs`) or pass on command line:
-
-```
--Declipse.instance.icon=/path/to/your/icon.png
+```text
+-Declipse.instance.icon=/absolute/path/icon.png
 -Declipse.instance.titleSuffix=[DEV]
 ```
 
-### Environment Variables
+Equivalent environment variables:
 
-Set before launching Eclipse:
+```text
+ECLIPSE_INSTANCE_ICON=/absolute/path/icon.png
+ECLIPSE_INSTANCE_TITLE_SUFFIX=[DEV]
+```
+
+Precedence is system property, environment variable, then workspace preference.
+
+## Build
+
+The Maven/Tycho reactor builds the plug-in, installable feature, and p2 site:
 
 ```bash
-export ECLIPSE_INSTANCE_ICON=/path/to/your/icon.png
-export ECLIPSE_INSTANCE_TITLE_SUFFIX=[DEV]
-/opt/eclipse/eclipse
+./mvnw clean verify
 ```
 
-### Plugin Preferences
+The update site is produced at `repository/target/repository/`. Add that folder
+in Eclipse as a local repository to test it before publishing.
 
-1. Go to `Window > Preferences > Instance Icon`
-2. Choose from predefined icons or set a custom icon file path
-3. Optionally set a title suffix
-4. Click Apply and OK
-
-**Note**: Settings are stored per workspace. When you open a different workspace, that workspace will have its own independent icon settings. This allows you to easily distinguish between workspaces (e.g., DEV, PROD, TEST) without needing launcher scripts or environment variables.
-
-#### Predefined Icons
-
-The plugin includes the following bundled icons:
-
-| Name | Description |
-|------|-------------|
-| Original (Purple) | Default Eclipse purple color |
-| Blue | Blue-themed Eclipse icon |
-| Sky | Light blue/sky-themed icon |
-| Green | Green-themed Eclipse icon |
-| Sage | Sage green-themed icon |
-| Red | Red-themed Eclipse icon |
-| Rose | Rose/pink-themed icon |
-
-**Note**: System properties and environment variables take precedence over preferences.
-
-## Usage Examples
-
-### Running Multiple Instances with Different Icons
-
-Create a launcher script for each instance:
-
-**eclipse-dev.sh:**
-```bash
-#!/bin/bash
-export ECLIPSE_INSTANCE_ICON=/home/user/icons/eclipse-dev.png
-export ECLIPSE_INSTANCE_TITLE_SUFFIX="[DEV]"
-/opt/eclipse/eclipse
-```
-
-**eclipse-prod.sh:**
-```bash
-#!/bin/bash
-export ECLIPSE_INSTANCE_ICON=/home/user/icons/eclipse-prod.png
-export ECLIPSE_INSTANCE_TITLE_SUFFIX="[PROD]"
-/opt/eclipse/eclipse
-```
-
-### KDE Desktop Entry Override
-
-Create a user-local copy in `~/.local/share/applications/eclipse-dev.desktop`:
-
-```desktop
-[Desktop Entry]
-Type=Application
-Name=Eclipse (DEV)
-Exec=/opt/eclipse/eclipse -vmargs -Declipse.instance.icon=/home/user/icons/eclipse-dev.png -Declipse.instance.titleSuffix=[DEV]
-Icon=/home/user/icons/eclipse-dev.png
-Categories=Development;IDE;
-```
-
-### PDE Launch Configuration
-
-1. Open `Run > Run Configurations...`
-2. Select your Eclipse Application configuration
-3. Go to `Arguments` tab
-4. Add to VM arguments:
-   ```
-   -Declipse.instance.icon=/path/to/icon.png
-   -Declipse.instance.titleSuffix=[TARGET]
-   ```
-
-Or use the Environment tab to set `ECLIPSE_INSTANCE_ICON` and `ECLIPSE_INSTANCE_TITLE_SUFFIX`.
-
-## Icon Requirements
-
-### Recommended Format
-
-- **Format**: PNG (24-bit with alpha transparency)
-- **Sizes**: Provide multiple sizes for best quality at various DPIs:
-  - 16x16 (small icons)
-  - 24x24 (panels)
-  - 32x32 (menus)
-  - 48x48 (taskbar)
-  - 64x64 (alt-tab)
-  - 128x128 (high-DPI displays)
-
-### Single File Approach
-
-You can provide a single high-resolution PNG (e.g., 256x256 or 512x512) and the plugin will scale it automatically. However, pre-scaled icons at standard sizes will look sharper.
-
-### Icon Naming Convention
-
-For a set of sized icons:
-```
-icons/
-├── eclipse-dev-16.png
-├── eclipse-dev-24.png
-├── eclipse-dev-32.png
-├── eclipse-dev-48.png
-├── eclipse-dev-64.png
-└── eclipse-dev-128.png
-```
-
-When using a single file, just provide the path to the largest icon:
-```
-/home/user/icons/eclipse-dev-128.png
-```
-
-## Troubleshooting
-
-### Icons Not Appearing
-
-1. **Check file path**: Ensure the path is absolute and the file exists
-2. **Check permissions**: The icon file must be readable by the user running Eclipse
-3. **Check format**: Only PNG files are supported
-4. **Check logs**: View `Error Log` view for warnings/errors from the plugin
-
-### Stale Icons in Taskbar (KDE)
-
-KDE may cache icons. Try:
-```bash
-kbuildsycoca5 --noincremental
-```
-Or log out and log in again.
-
-### HiDPI Displays
-
-Provide multiple icon sizes or a large source icon (128x128 or larger). The plugin will scale as needed.
-
-### Flatpak/Snap Sandboxing
-
-Icon files outside the sandbox may not be accessible. Place icons in allowed paths or within the home directory.
-
-### Wayland Considerations
-
-Some Wayland compositors may have limitations with per-window icon changes. The title suffix feature helps distinguish instances when icons are not fully supported.
-
-## Building from Source
-
-### Prerequisites
-
-- Eclipse IDE for RCP/Plugin Development
-- Java 17 SDK
-
-### Build Steps
-
-1. Import the project: `File > Import > Existing Projects into Workspace`
-2. Ensure target platform includes `org.eclipse.ui` and `org.eclipse.core.runtime`
-3. Export: `File > Export > Plug-in Development > Deployable plug-ins and fragments`
-4. Select the plugin and export as a JAR
-
-### Optional: Tycho Build
-
-For CI/CD, you can set up a Tycho build. See Eclipse Tycho documentation.
-
-## API
-
-The plugin does not expose public API. All functionality is internal and activated automatically at startup.
+Releases are published by pushing a `v*` tag, which copies the freshly built
+repository into `p2/` on `main`. GitHub Pages then serves it.
 
 ## License
 
-This plugin is provided as-is. Feel free to modify and distribute.
-
-## Changelog
-
-### 1.0.0
-
-- Initial release
-- Custom icon support (PNG)
-- Title suffix support
-- Configuration via system properties, environment variables, and preferences
-- Preference page with icon preview
-- Fallback icon when no custom icon is configured
+MIT — see [LICENSE](LICENSE).

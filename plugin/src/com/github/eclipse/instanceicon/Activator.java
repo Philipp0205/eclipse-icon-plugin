@@ -19,7 +19,7 @@ import org.osgi.framework.BundleContext;
 public class Activator extends AbstractUIPlugin {
 
     /** The plug-in ID */
-    public static final String PLUGIN_ID = "de.kurrle.eclipse.instanceicon";
+    public static final String PLUGIN_ID = "com.github.eclipse.instanceicon";
 
     /** System property for icon path */
     public static final String SYSPROP_ICON = "eclipse.instance.icon";
@@ -94,51 +94,10 @@ public class Activator extends AbstractUIPlugin {
     public void start(BundleContext context) throws Exception {
         super.start(context);
         plugin = this;
-        initializeDefaultPreferences();
-        logInfo("Per-instance icon plugin started");
-    }
-    
-    /**
-     * Initialize default preferences on first installation.
-     */
-    private void initializeDefaultPreferences() {
-        IPreferenceStore store = getPreferenceStore();
-        
-        // Set default colors
-        store.setDefault(PREF_COLOR_PRIMARY, DEFAULT_COLOR_PRIMARY);
-        store.setDefault(PREF_COLOR_SECONDARY, DEFAULT_COLOR_SECONDARY);
-        store.setDefault(PREF_COLOR_ACCENT, DEFAULT_COLOR_ACCENT);
-        store.setDefault(PREF_ICON_TEXT, DEFAULT_ICON_TEXT);
-        store.setDefault(PREF_ICON_TEXT_COLOR, DEFAULT_ICON_TEXT_COLOR);
-        
-        // Initialize colors if not set
-        if (store.getString(PREF_COLOR_PRIMARY).isEmpty()) {
-            store.setValue(PREF_COLOR_PRIMARY, DEFAULT_COLOR_PRIMARY);
-        }
-        if (store.getString(PREF_COLOR_SECONDARY).isEmpty()) {
-            store.setValue(PREF_COLOR_SECONDARY, DEFAULT_COLOR_SECONDARY);
-        }
-        if (store.getString(PREF_COLOR_ACCENT).isEmpty()) {
-            store.setValue(PREF_COLOR_ACCENT, DEFAULT_COLOR_ACCENT);
-        }
-        if (store.getString(PREF_ICON_TEXT).isEmpty()) {
-            store.setValue(PREF_ICON_TEXT, DEFAULT_ICON_TEXT);
-        }
-        if (store.getString(PREF_ICON_TEXT_COLOR).isEmpty()) {
-            store.setValue(PREF_ICON_TEXT_COLOR, DEFAULT_ICON_TEXT_COLOR);
-        }
-        
-        // Save preferences
-        try {
-            ((ScopedPreferenceStore) store).save();
-        } catch (java.io.IOException e) {
-            logError("Failed to save default preferences", e);
-        }
     }
 
     @Override
     public void stop(BundleContext context) throws Exception {
-        logInfo("Per-instance icon plugin stopping");
         plugin = null;
         super.stop(context);
     }

@@ -1,43 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <!--
-    Headless (Tycho) build for the Per-Workspace Eclipse Icon Plugin.
-
-    This mirrors the CI/CD build referenced in the README ("Optional: Tycho
-    Build"). It lets the OSGi bundle be compiled and packaged into a deployable
-    plug-in JAR without the Eclipse IDE, resolving the required org.eclipse.*
-    bundles from a public p2 release repository.
-
-    The third-party Batik jars listed on the bundle's Bundle-ClassPath live in
-    ./lib and are fetched by scripts/download-libs.sh (they are git-ignored).
-    Run that script before building.
-
-    Build with:  mvn -B clean package
-    Output:      target/de.kurrle.eclipse.instanceicon-1.0.0-SNAPSHOT.jar
-  -->
-
-  <groupId>de.kurrle.eclipse</groupId>
-  <artifactId>de.kurrle.eclipse.instanceicon</artifactId>
-  <!-- Maven 1.0.0-SNAPSHOT maps to the OSGi 1.0.0.qualifier in MANIFEST.MF. -->
+  <groupId>com.github.eclipse</groupId>
+  <artifactId>instanceicon</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <packaging>eclipse-plugin</packaging>
+  <packaging>pom</packaging>
+
+  <name>Per-Workspace Eclipse Icon</name>
 
   <properties>
-    <tycho.version>4.0.13</tycho.version>
+    <tycho.version>5.0.3</tycho.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- The bundle targets Eclipse 4.x; resolve platform bundles from here. -->
-    <eclipse.release.url>https://download.eclipse.org/releases/2024-12</eclipse.release.url>
   </properties>
+
+  <modules>
+    <module>plugin</module>
+    <module>feature</module>
+    <module>repository</module>
+  </modules>
 
   <repositories>
     <repository>
-      <id>eclipse-release</id>
+      <id>eclipse-2026-06</id>
       <layout>p2</layout>
-      <url>${eclipse.release.url}</url>
+      <url>https://download.eclipse.org/releases/2026-06/</url>
     </repository>
   </repositories>
 
@@ -48,23 +37,6 @@
         <artifactId>tycho-maven-plugin</artifactId>
         <version>${tycho.version}</version>
         <extensions>true</extensions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.eclipse.tycho</groupId>
-        <artifactId>target-platform-configuration</artifactId>
-        <version>${tycho.version}</version>
-        <configuration>
-          <!-- Build for the environment this plugin ships on (Linux/GTK/x86_64). -->
-          <environments>
-            <environment>
-              <os>linux</os>
-              <ws>gtk</ws>
-              <arch>x86_64</arch>
-            </environment>
-          </environments>
-          <executionEnvironment>JavaSE-21</executionEnvironment>
-        </configuration>
       </plugin>
     </plugins>
   </build>

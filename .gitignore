@@ -1,6 +1,6 @@
 # Build outputs
-/bin/
-/target/
+**/bin/
+**/target/
 
 # Eclipse settings (optional - can be versioned)
 # .settings/
@@ -8,6 +8,9 @@
 # Maven
 *.jar
 *.war
+
+# p2/ is the published update site served by GitHub Pages.
+!p2/**/*.jar
 
 # OS files
 .DS_Store

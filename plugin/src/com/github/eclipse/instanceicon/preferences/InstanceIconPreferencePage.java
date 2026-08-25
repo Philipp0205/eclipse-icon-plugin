@@ -16,13 +16,17 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.github.eclipse.instanceicon.Activator;
 import com.github.eclipse.instanceicon.IconManager;
+import com.github.eclipse.instanceicon.Startup;
 
 /**
  * Preference page for configuring per-instance icon colors and title suffix.
@@ -45,6 +49,17 @@ public class InstanceIconPreferencePage extends PreferencePage implements IWorkb
     private StringFieldEditor iconTextEditor;
     private Composite fieldEditorParent;
     private org.eclipse.swt.widgets.Spinner textSizeSpinner;
+    private Button enabledButton;
+    private Combo iconSourceCombo;
+    private Text customPathText;
+    private Text titleSuffixText;
+
+    private static final String[] ICON_SOURCE_LABELS = {
+        "Custom colors", "Original (purple)", "Blue", "Sky", "Green", "Sage", "Red", "Rose"
+    };
+    private static final String[] ICON_SOURCE_VALUES = {
+        "custom", "original", "blue", "sky", "green", "sage", "red", "rose"
+    };
 
     /**
      * Creates the preference page.
@@ -67,10 +82,8 @@ public class InstanceIconPreferencePage extends PreferencePage implements IWorkb
         container.setLayout(new GridLayout(1, false));
         container.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         
-        // Initialize preview icon manager
         previewIconManager = new IconManager(parent.getDisplay());
-        
-        // Create color selection group
+        createGeneralGroup(container);
         createColorGroup(container);
         
         // Create preview group
@@ -97,6 +110,54 @@ public class InstanceIconPreferencePage extends PreferencePage implements IWorkb
         updatePreview();
         
         return container;
+    }
+
+    private void createGeneralGroup(Composite parent) {
+        Group group = new Group(parent, SWT.NONE);
+        group.setText("Workspace appearance");
+        group.setLayout(new GridLayout(3, false));
+        group.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+        enabledButton = new Button(group, SWT.CHECK);
+        enabledButton.setText("Enable custom icon and title for this workspace");
+        enabledButton.setSelection(getPreferenceStore().getBoolean(Activator.PREF_ENABLED));
+        enabledButton.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1));
+
+        new Label(group, SWT.NONE).setText("Icon style:");
+        iconSourceCombo = new Combo(group, SWT.DROP_DOWN | SWT.READ_ONLY);
+        iconSourceCombo.setItems(ICON_SOURCE_LABELS);
+        iconSourceCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        String current = getPreferenceStore().getString(Activator.PREF_PREDEFINED_ICON);
+        int selected = 0;
+        for (int i = 0; i < ICON_SOURCE_VALUES.length; i++) {
+            if (ICON_SOURCE_VALUES[i].equals(current)) {
+                selected = i;
+                break;
+            }
+        }
+        iconSourceCombo.select(selected);
+        iconSourceCombo.addListener(SWT.Selection, event -> updatePreview());
+
+        new Label(group, SWT.NONE).setText("Custom PNG:");
+        customPathText = new Text(group, SWT.BORDER);
+        customPathText.setText(getPreferenceStore().getString(Activator.PREF_ICON_PATH));
+        customPathText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        customPathText.addModifyListener(event -> updatePreview());
+        Button browse = new Button(group, SWT.PUSH);
+        browse.setText("Browse\u2026");
+        browse.addListener(SWT.Selection, event -> {
+            FileDialog dialog = new FileDialog(getShell(), SWT.OPEN);
+            dialog.setText("Select a PNG icon");
+            dialog.setFilterExtensions(new String[] { "*.png", "*.*" });
+            String selectedPath = dialog.open();
+            if (selectedPath != null) {
+                customPathText.setText(selectedPath);
+            }
+        });
+
+        Label note = new Label(group, SWT.WRAP);
+        note.setText("A custom PNG overrides the icon style. System properties and environment variables override this page.");
+        note.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 3, 1));
     }
     
     /**
@@ -207,6 +268,11 @@ public class InstanceIconPreferencePage extends PreferencePage implements IWorkb
         fieldEditorParent = new Composite(titleGroup, SWT.NONE);
         fieldEditorParent.setLayout(new GridLayout(2, false));
         fieldEditorParent.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+        new Label(fieldEditorParent, SWT.NONE).setText("Title suffix:");
+        titleSuffixText = new Text(fieldEditorParent, SWT.BORDER);
+        titleSuffixText.setText(getPreferenceStore().getString(Activator.PREF_TITLE_SUFFIX));
+        titleSuffixText.setMessage("[DEV]");
+        titleSuffixText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
     }
     
     private void createIconTextSection(Composite parent) {
@@ -283,8 +349,19 @@ public class InstanceIconPreferencePage extends PreferencePage implements IWorkb
             : Activator.DEFAULT_ICON_TEXT_SIZE;
         
         // Create new preview image
-        previewImage = previewIconManager.createPreviewImage(
-            PREVIEW_SIZE, primaryColor, secondaryColor, accentColor, overlayText, textColor, textSize);
+        String customPath = customPathText == null ? "" : customPathText.getText().trim();
+        if (!customPath.isEmpty()) {
+            previewImage = previewIconManager.createCustomPreview(
+                    PREVIEW_SIZE, customPath, overlayText, textColor, textSize);
+        } else if (iconSourceCombo != null && iconSourceCombo.getSelectionIndex() > 0) {
+            previewImage = previewIconManager.createPredefinedPreview(
+                    PREVIEW_SIZE, ICON_SOURCE_VALUES[iconSourceCombo.getSelectionIndex()],
+                    overlayText, textColor, textSize);
+        } else {
+            previewImage = previewIconManager.createPreviewImage(
+                    PREVIEW_SIZE, primaryColor, secondaryColor, accentColor,
+                    overlayText, textColor, textSize);
+        }
         
         if (previewImage != null) {
             previewLabel.setImage(previewImage);
@@ -314,6 +391,11 @@ public class InstanceIconPreferencePage extends PreferencePage implements IWorkb
         store.setValue(Activator.PREF_ICON_TEXT, normalizeOverlayText(iconTextEditor.getStringValue()));
         store.setValue(Activator.PREF_ICON_TEXT_COLOR, IconManager.rgbToString(textColorSelector.getColorValue()));
         store.setValue(Activator.PREF_ICON_TEXT_SIZE, textSizeSpinner.getSelection());
+        store.setValue(Activator.PREF_ENABLED, enabledButton.getSelection());
+        store.setValue(Activator.PREF_PREDEFINED_ICON,
+                ICON_SOURCE_VALUES[Math.max(0, iconSourceCombo.getSelectionIndex())]);
+        store.setValue(Activator.PREF_ICON_PATH, customPathText.getText().trim());
+        store.setValue(Activator.PREF_TITLE_SUFFIX, titleSuffixText.getText().trim());
         
         // Explicitly save the scoped preference store
         try {
@@ -323,7 +405,13 @@ public class InstanceIconPreferencePage extends PreferencePage implements IWorkb
             Activator.logError("Failed to save preferences", e);
         }
         
+        Startup.reloadAsync();
         return true;
+    }
+
+    @Override
+    protected void performApply() {
+        performOk();
     }
     
     @Override
@@ -345,6 +433,10 @@ public class InstanceIconPreferencePage extends PreferencePage implements IWorkb
         if (textSizeSpinner != null && !textSizeSpinner.isDisposed()) {
             textSizeSpinner.setSelection(Activator.DEFAULT_ICON_TEXT_SIZE);
         }
+        enabledButton.setSelection(true);
+        iconSourceCombo.select(0);
+        customPathText.setText("");
+        titleSuffixText.setText("");
         
         // Update preview
         updatePreview();
