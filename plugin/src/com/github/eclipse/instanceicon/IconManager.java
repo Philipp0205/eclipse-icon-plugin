@@ -185,9 +185,9 @@ public final class IconManager {
 
         RGB reference;
         RGB target;
-        float accentDistance = colorDistance(source, ORIGINAL_ACCENT);
-        float primaryDistance = colorDistance(source, ORIGINAL_PRIMARY);
-        float secondaryDistance = colorDistance(source, ORIGINAL_SECONDARY);
+        double accentDistance = colorDistance(source, ORIGINAL_ACCENT);
+        double primaryDistance = colorDistance(source, ORIGINAL_PRIMARY);
+        double secondaryDistance = colorDistance(source, ORIGINAL_SECONDARY);
         if (accentDistance < primaryDistance && accentDistance < secondaryDistance) {
             reference = ORIGINAL_ACCENT;
             target = accent;
