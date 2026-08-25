@@ -1,0 +1,46 @@
+---
+description: Keep Cursor and AI tooling out of commit and pull request attribution
+alwaysApply: true
+---
+
+# Commit and Pull Request Attribution
+
+Never credit Cursor, or any AI tool, as an author or co-author. Commits and pull
+requests belong to the person who owns the change.
+
+## Commit messages
+
+A commit message is a subject line plus an optional body. Nothing else.
+
+```text
+# BAD - attribution trailer
+Smooth icon scaling and add native-resolution sizes
+
+Co-authored-by: Cursor <cursor@cursor.com>
+```
+
+```text
+# GOOD
+Smooth icon scaling and add native-resolution sizes
+```
+
+Also never add: `Co-authored-by: Cursor Agent`, `Generated with Cursor`,
+`Signed-off-by: Cursor`, robot emoji footers, or notes like "AI-assisted".
+
+`Co-authored-by` trailers naming real people are correct and must be preserved.
+
+## Pull requests
+
+Keep the title and body about the change: what it does, why, and how it was
+verified. Do not add a line stating the PR was written by Cursor or an agent.
+
+```text
+# BAD - trailing attribution in the PR body
+## Summary
+Replace nearest-neighbour icon scaling with an alpha-weighted resampler.
+
+Created by Cursor 🤖
+```
+
+Delete that last line and the body is correct. Cursor's tooling may append a run
+link automatically; that is not something to add by hand.
