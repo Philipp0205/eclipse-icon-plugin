@@ -22,6 +22,15 @@ jobs:
           cache: maven
       - name: Build and verify p2 repository
         run: ./mvnw --batch-mode clean verify
+      - name: Resolve feature installation
+        run: >-
+          ./mvnw --batch-mode --non-recursive
+          org.eclipse.tycho:tycho-p2-director-plugin:5.0.3:director
+          -Ddestination=${{ runner.temp }}/p2-verify
+          -Drepositories=file:${{ github.workspace }}/repository/target/repository/,https://download.eclipse.org/releases/2026-06/
+          -DinstallIUs=com.github.eclipse.instanceicon.feature.feature.group
+          -DverifyOnly=true
+          -Dprofileproperties=org.eclipse.update.install.features=true
       - name: Upload p2 repository
         uses: actions/upload-artifact@v4
         with:
