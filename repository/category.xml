@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.github.eclipse.instanceicon.feature_1.0.0.qualifier.jar"
+         id="com.github.eclipse.instanceicon.feature"
+         version="1.0.0.qualifier">
+      <category name="workspace-tools"/>
+   </feature>
+   <category-def name="workspace-tools" label="Workspace Tools">
+      <description>
+         Tools for identifying and customizing Eclipse workspaces.
+      </description>
+   </category-def>
+</site>
