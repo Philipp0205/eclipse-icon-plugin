@@ -1,0 +1,5 @@
+{
+  "name": "Per-Workspace Eclipse Icon Plugin",
+  "user": "ubuntu",
+  "install": "./mvnw --batch-mode clean verify"
+}
